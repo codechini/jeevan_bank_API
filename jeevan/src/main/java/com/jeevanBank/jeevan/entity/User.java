@@ -1,12 +1,18 @@
 package com.jeevanBank.jeevan.entity;
 
+import com.jeevanBank.jeevan.repository.UserRepository;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.beans.factory.annotation.Autowired;
+
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -28,7 +34,7 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String password;
 
     @Column(nullable = false)
@@ -46,12 +52,17 @@ public class User {
     @Column(nullable = false, unique = true)
     private String account_number;
 
-    @Column(nullable = false)
+    @CreationTimestamp
+    @Column(nullable = true)
+//    private Timestamp create_at;
     private Timestamp create_at;
 
-    @Column(nullable = false)
+
+    @UpdateTimestamp
+    @Column(nullable = true)
     private Timestamp update_at;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Timestamp deleted_at;
+
 }

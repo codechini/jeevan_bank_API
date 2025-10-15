@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -27,4 +28,7 @@ public class UserDto {
     private Timestamp create_at;
     private Timestamp update_at;
     private Timestamp deleted_at;
+
+    public UserDto(Long userId, String firstName, String lastName, String email, String password, String role, String phoneNumber, String address, Double balance, Long accountNumber, Timestamp createAt, Timestamp updateAt, Timestamp deletedAt) {
+    }
 }

@@ -65,4 +65,10 @@ public class UserServiceimpl implements UserService {
 //        return UserMapper.toUserDto(user);
         userRepository.deleteById(Math.toIntExact(user_id));
     }
+
+    @Override
+    public Long UserCount(){
+//        return userRepository.findAll().stream().count();
+        return userRepository.count();
+    }
 }

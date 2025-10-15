@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/users")
+@CrossOrigin(origins = "http://localhost:5173")
 public class UserController {
     private UserService userService;
 
@@ -20,6 +21,14 @@ public class UserController {
         UserDto result = userService.createUser(userDto);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
     }
+
+    @GetMapping("/count")
+    public ResponseEntity<Long> UserCount() {
+//        Long result = userService.UserCount();
+//        return new ResponseEntity<>(result, HttpStatus.OK);
+        return ResponseEntity.ok(userService.UserCount());
+    }
+
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() {
         List<UserDto> result = userService.getAllUsers();
