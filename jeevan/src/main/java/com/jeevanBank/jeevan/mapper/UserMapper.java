@@ -8,7 +8,7 @@ import java.sql.Timestamp;
 public class UserMapper {
     public static UserDto toUserDto(User user) {
         return new UserDto(
-                user.getUser_id(),
+                user.getId(),
                 user.getFirst_name(),
                 user.getLast_name(),
                 user.getEmail(),
@@ -17,7 +17,7 @@ public class UserMapper {
                 user.getPhone_number(),
                 user.getAddress(),
                 user.getBalance(),
-                user.getAccount_number(),
+                user.getAccountNumber(),
                 user.getCreate_at(),
                 user.getUpdate_at(),
                 user.getDeleted_at()

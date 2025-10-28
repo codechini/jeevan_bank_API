@@ -23,7 +23,8 @@ import java.time.LocalDateTime;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long user_id;
+    @Column(name = "user_id")
+    private Long id;
 
     @Column(nullable = false)
     private String first_name;
@@ -49,8 +50,8 @@ public class User {
     @Column(nullable = false)
     private Double balance;
 
-    @Column(nullable = false, unique = true)
-    private String account_number;
+    @Column(nullable = false, unique = true, name="account_number")
+    private String accountNumber;
 
     @CreationTimestamp
     @Column(nullable = true)

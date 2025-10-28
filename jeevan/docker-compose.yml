@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    container_name: springboot_app
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://jeevanbank-postgres:5432/jeevan_bank
+      SPRING_DATASOURCE_USERNAME: jeevan
+      SPRING_DATASOURCE_PASSWORD: crab
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+    ports:
+      - "8080:8080"
+    networks:
+      - jeevan-net
+
+networks:
+  jeevan-net:
+    external: true
+

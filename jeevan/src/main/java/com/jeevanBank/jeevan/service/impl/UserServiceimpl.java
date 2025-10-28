@@ -27,7 +27,7 @@ public class UserServiceimpl implements UserService {
 
     @Override
     public UserDto getUserById(Long user_id) {
-        User user = userRepository.findById(Math.toIntExact(user_id)).orElseThrow(()-> new ResouceNotFound("User does not exist"+ user_id));
+        User user = userRepository.findById(Math.toIntExact(user_id)).orElseThrow(()-> new ResouceNotFound("id", user_id, "User"));
         return UserMapper.toUserDto(user);
 
     }
@@ -41,8 +41,8 @@ public class UserServiceimpl implements UserService {
 
     @Override
     public UserDto updateUser(Long user_id, UserDto updateUserDto) {
-        User user = userRepository.findById(Math.toIntExact(user_id)).orElseThrow(() -> new ResouceNotFound("No user found/ exixts"));
-        user.setUser_id(updateUserDto.getUser_id());
+        User user = userRepository.findById(Math.toIntExact(user_id)).orElseThrow(() -> new ResouceNotFound("id", user_id, "No user found/ exixts"));
+        user.setId(updateUserDto.getUser_id());
         user.setFirst_name(updateUserDto.getFirst_name());
         user.setLast_name(updateUserDto.getLast_name());
         user.setEmail(updateUserDto.getEmail());
@@ -51,7 +51,7 @@ public class UserServiceimpl implements UserService {
         user.setPhone_number(updateUserDto.getPhone_number());
         user.setAddress(updateUserDto.getAddress());
         user.setBalance(updateUserDto.getBalance());
-        user.setAccount_number(updateUserDto.getAccount_number());
+        user.setAccountNumber(updateUserDto.getAccount_number());
         user.setCreate_at(updateUserDto.getCreate_at());
         user.setUpdate_at(updateUserDto.getUpdate_at());
         user.setDeleted_at(updateUserDto.getDeleted_at());
@@ -61,7 +61,7 @@ public class UserServiceimpl implements UserService {
 
     @Override
     public void deleteUser(Long user_id) {
-        User user = userRepository.findById(Math.toIntExact(user_id)).orElseThrow(()-> new ResouceNotFound("User does not exist"+ user_id));
+        User user = userRepository.findById(Math.toIntExact(user_id)).orElseThrow(()-> new ResouceNotFound("id", user_id, "User"));
 //        return UserMapper.toUserDto(user);
         userRepository.deleteById(Math.toIntExact(user_id));
     }
