@@ -1,0 +1,1461 @@
+# Jeevan Bank API Tests
+# ======================
+# Run these commands to test the API endpoints
+
+# ===========================================
+# AUTH ENDPOINTS (No authentication required)
+# ===========================================
+
+# 1.1. Register a new user (ROLE_USER)
+curl -v -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "password": "TestPass123!",
+    "email": "testuser@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  }'
+  
+# 1.2. Register a new user (ROLE_ADMIN)
+curl -v -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testadmin",
+    "password": "AdminTestPass123!",
+    "email": "testadmin@example.com",
+    "firstName": "John",
+    "lastName": "Doshi"
+  }'
+
+# Save the JWT token from the response for subsequent requests
+# Example: TOKEN="eyJhbGciOiJIUzI1NiJ9..."
+
+# 2.1. Login with existing user
+curl -v -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "password": "TestPass123!"
+  }'
+
+# 2.2. Login with existing admin
+curl -v -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testadmin",
+    "password": "AdminTestPass123!"
+  }'
+  
+  
+# ===========================================
+# USER ENDPOINTS (Requires ROLE_USER or ROLE_ADMIN)
+# Set TOKEN variable first: TOKEN="your-jwt-token-here"
+# ===========================================
+
+# 3. Open a new bank account
+curl -v -X POST http://localhost:8080/api/user/openaccount \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "dateOfBirth": "1990-05-15",
+    "address": "123 Main Street, New York, NY 10001",
+    "phone": "+1234567890",
+    "citizenshipId": "US123456789",
+    "accountType": "SAVINGS"
+  }'
+
+# 4. Open a checking account
+curl -v -X POST http://localhost:8080/api/user/openaccount \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "accountType": "CHECKING"
+  }'
+
+# ===========================================
+# ADMIN ENDPOINTS (Requires ROLE_ADMIN)
+# ===========================================
+
+# First, manually set an admin user in DB or create admin registration endpoint
+# Then use admin token for these tests
+
+# 5. Admin view all accounts (placeholder - endpoint not yet implemented)
+# curl -v -X GET http://localhost:8080/api/admin/viewallaccounts \
+#   -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ===========================================
+# VALIDATION ERROR TESTS
+# ===========================================
+
+# Test: Register with missing fields (should return 400 Bad Request)
+curl -v -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "baduser"
+  }'
+
+# Test: Register with invalid email (should return 400 Bad Request)
+curl -v -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "baduser",
+    "password": "TestPass123!",
+    "email": "not-an-email",
+    "firstName": "Test",
+    "lastName": "User"
+  }'
+
+# Test: Login with wrong credentials (should return 401 Unauthorized)
+curl -v -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "password": "WrongPassword123!"
+  }'
+
+# Test: Access protected endpoint without token (should return 401 Unauthorized)
+curl -v -X POST http://localhost:8080/api/user/openaccount \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "accountType": "SAVINGS"
+  }'
+
+# Test: Duplicate username registration (should return 400 Bad Request)
+curl -v -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "password": "TestPass456!",
+    "email": "another@example.com",
+    "firstName": "Another",
+    "lastName": "User"
+  }'
+
+# Test: Duplicate email registration (should return 400 Bad Request)
+curl -v -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "anotheruser",
+    "password": "TestPass456!",
+    "email": "testuser@example.com",
+    "firstName": "Another",
+    "lastName": "User"
+  }'
+
+# Test: Invalid account type (should return 400 Bad Request)
+curl -v -X POST http://localhost:8080/api/user/openaccount \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "accountType": "INVALID_TYPE"
+  }'
+
+# ===========================================
+# QUICK TEST SCRIPT (Copy and paste)
+# ===========================================
+
+# Quick registration and login test:
+# 1. Register
+RESPONSE=$(curl -s -v -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"quicktest","password":"QuickTest123!","email":"quicktest@test.com","firstName":"Quick","lastName":"Test"}')
+echo "Register Response: $RESPONSE"
+
+# 2. Extract token (requires jq)
+TOKEN=$(echo $RESPONSE | jq -r '.data.token')
+echo "Token: $TOKEN"
+
+# 3. Open account using the token
+curl -v -X POST http://localhost:8080/api/user/openaccount \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"firstName":"Quick","lastName":"Test","accountType":"SAVINGS"}'
+
+# ===========================================
+# ACCOUNT MANAGEMENT - USER ENDPOINTS
+# ===========================================
+
+# USER: List own accounts
+curl -v -X GET http://localhost:8080/api/user/accounts \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Get specific account details (own account)
+curl -v -X GET http://localhost:8080/api/user/accounts/{accountId} \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Close own account
+curl -v -X PUT http://localhost:8080/api/user/accounts/{accountId}/close \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Update own account details
+curl -v -X PUT http://localhost:8080/api/user/accounts/{accountId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Smith",
+    "address": "123 New Street, City, State 12345",
+    "phone": "+9876543210"
+  }'
+
+# USER: Update own account type
+curl -v -X PUT http://localhost:8080/api/user/accounts/{accountId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountType": "CHECKING"
+  }'
+
+# USER: Update both account type and holder details
+curl -v -X PUT http://localhost:8080/api/user/accounts/{accountId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountType": "FIXED_DEPOSIT",
+    "firstName": "John",
+    "lastName": "Smith",
+    "dateOfBirth": "1990-05-15"
+  }'
+
+# USER: Try to update another user's account (should return 403)
+curl -v -X PUT http://localhost:8080/api/user/accounts/{otherUserAccountId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountType": "CHECKING"
+  }'
+
+# USER: Try to update non-existent account (should return 400)
+curl -v -X PUT http://localhost:8080/api/user/accounts/00000000-0000-0000-0000-000000000000 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountType": "CHECKING"
+  }'
+
+# USER: Delete own closed account (with zero balance)
+curl -v -X DELETE http://localhost:8080/api/user/accounts/{closedAccountId} \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Try to delete open account (should return 400 - must be closed first)
+curl -v -X DELETE http://localhost:8080/api/user/accounts/{accountId} \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Try to delete account with balance (should return 400 - must have zero balance)
+curl -v -X DELETE http://localhost:8080/api/user/accounts/{accountIdWithBalance} \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Try to delete another user's account (should return 403)
+curl -v -X DELETE http://localhost:8080/api/user/accounts/{otherUserAccountId} \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Try to delete non-existent account (should return 400)
+curl -v -X DELETE http://localhost:8080/api/user/accounts/00000000-0000-0000-0000-000000000000 \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Try to update/delete without token (should return 401)
+curl -v -X PUT http://localhost:8080/api/user/accounts/{accountId} \
+  -H "Content-Type: application/json" \
+  -d '{"accountType": "CHECKING"}'
+curl -v -X DELETE http://localhost:8080/api/user/accounts/{accountId}
+
+# USER: Try to access another user's account (should return 403)
+curl -v -X GET http://localhost:8080/api/user/accounts/{otherUserAccountId} \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# ===========================================
+# ACCOUNT MANAGEMENT - ADMIN ENDPOINTS
+# ===========================================
+
+# ADMIN: List ALL accounts
+curl -v -X GET http://localhost:8080/api/admin/accounts \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: List accounts by holderId
+curl -v -X GET "http://localhost:8080/api/admin/accounts?holderId={holderId}" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Get any account details
+curl -v -X GET http://localhost:8080/api/admin/accounts/{accountId} \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Close any account
+curl -v -X PUT http://localhost:8080/api/admin/accounts/{accountId}/close \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ===========================================
+# ACCOUNT MANAGEMENT - SECURITY TESTS
+# ===========================================
+
+# USER trying to access ADMIN endpoint (should return 403)
+curl -v -X GET http://localhost:8080/api/admin/accounts \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Close non-existent account
+curl -v -X PUT http://localhost:8080/api/user/accounts/00000000-0000-0000-0000-000000000000/close \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Close already closed account
+curl -v -X PUT http://localhost:8080/api/user/accounts/{closedAccountId}/close \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Access without token (should return 401)
+curl -v -X GET http://localhost:8080/api/user/accounts
+curl -v -X GET http://localhost:8080/api/admin/accounts
+
+# ===========================================
+# ADMIN USER MANAGEMENT - ENDPOINTS
+# ===========================================
+
+# ADMIN: List ALL users
+curl -v -X GET http://localhost:8080/api/admin/users \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Get specific user details
+curl -v -X GET http://localhost:8080/api/admin/users/{userId} \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Deactivate a user (account holder)
+curl -v -X PUT http://localhost:8080/api/admin/users/{userId}/deactivate \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Activate a user (account holder)
+curl -v -X PUT http://localhost:8080/api/admin/users/{userId}/activate \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Change user role
+curl -v -X PUT http://localhost:8080/api/admin/users/{userId}/role \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"role": "ADMIN"}'
+
+# ADMIN: Change user role to USER
+curl -v -X PUT http://localhost:8080/api/admin/users/{userId}/role \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"role": "USER"}'
+
+# ===========================================
+# ADMIN USER MANAGEMENT - SECURITY TESTS
+# ===========================================
+
+# USER trying to access admin users endpoint (should return 403)
+curl -v -X GET http://localhost:8080/api/admin/users \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# ADMIN: Try to deactivate own account (should return 400)
+curl -v -X PUT http://localhost:8080/api/admin/users/{adminUserId}/deactivate \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to change own role (should return 400)
+curl -v -X PUT http://localhost:8080/api/admin/users/{adminUserId}/role \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"role": "USER"}'
+
+# ADMIN: Try to change to invalid role (should return 400)
+curl -v -X PUT http://localhost:8080/api/admin/users/{userId}/role \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"role": "INVALID_ROLE"}'
+
+# Get non-existent user (should return 400)
+curl -v -X GET http://localhost:8080/api/admin/users/00000000-0000-0000-0000-000000000000 \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ===========================================
+# TRANSACTION - USER ENDPOINTS
+# ===========================================
+
+# USER: View transaction history for own account
+curl -v -X GET http://localhost:8080/api/user/accounts/{accountId}/transactions \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: View paginated transaction history
+curl -v -X GET "http://localhost:8080/api/user/accounts/{accountId}/transactions/paginated?page=0&size=10" \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Deposit money
+curl -v -X POST http://localhost:8080/api/user/accounts/{accountId}/deposit \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "amount": 1000.00,
+    "description": "Salary deposit"
+  }'
+
+# USER: Withdraw money
+curl -v -X POST http://localhost:8080/api/user/accounts/{accountId}/withdraw \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "amount": 500.00,
+    "description": "ATM withdrawal"
+  }'
+
+# USER: Transfer money to another account
+curl -v -X POST http://localhost:8080/api/user/accounts/{accountId}/transfer \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "toAccountNumber": "JB123456789012345678",
+    "amount": 200.00,
+    "description": "Transfer to friend"
+  }'
+
+# ===========================================
+# TRANSACTION - SECURITY TESTS (USER)
+# ===========================================
+
+# USER: Try to access another user's transactions (should return 403)
+curl -v -X GET http://localhost:8080/api/user/accounts/{otherUserAccountId}/transactions \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: Try to deposit to non-existent account
+curl -v -X POST http://localhost:8080/api/user/accounts/00000000-0000-0000-0000-000000000000/deposit \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "amount": 100.00
+  }'
+
+# USER: Try to withdraw more than balance (should return 400)
+curl -v -X POST http://localhost:8080/api/user/accounts/{accountId}/withdraw \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "amount": 999999.00
+  }'
+
+# USER: Try to transfer to same account (self-transfer, should return 400)
+curl -v -X POST http://localhost:8080/api/user/accounts/{accountId}/transfer \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "toAccountNumber": "{accountNumber}",
+    "amount": 100.00
+  }'
+
+# USER: Try to transfer to non-existent account (should return 400)
+curl -v -X POST http://localhost:8080/api/user/accounts/{accountId}/transfer \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "toAccountNumber": "JB000000000000000000",
+    "amount": 100.00
+  }'
+
+# USER: Try to withdraw/transfer from closed account (should return 400)
+curl -v -X POST http://localhost:8080/api/user/accounts/{closedAccountId}/withdraw \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "amount": 50.00
+  }'
+
+# ===========================================
+# TRANSACTION - ADMIN ENDPOINTS
+# ===========================================
+
+# ADMIN: View ALL transactions
+
+# =====curl -v -X GET http://localhost:8080/api/admin/transactions \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: View transactions for specific account
+curl -v -X GET "http://localhost:8080/api/admin/transactions?accountNumber=JB123456789012345678" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Deposit money to any account
+curl -v -X POST http://localhost:8080/api/admin/accounts/{accountId}/deposit \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "amount": 1000.00,
+    "description": "Cash deposit"
+  }'
+
+# ADMIN: Withdraw money from any account
+curl -v -X POST http://localhost:8080/api/admin/accounts/{accountId}/withdraw \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "amount": 500.00,
+    "description": "Cash withdrawal"
+  }'
+
+# ADMIN: Transfer money from any account
+curl -v -X POST http://localhost:8080/api/admin/accounts/{accountId}/transfer \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "toAccountNumber": "JB123456789012345678",
+    "amount": 200.00,
+    "description": "Admin transfer"
+  }'
+
+# ===========================================
+# TRANSACTION - SECURITY TESTS (ADMIN)
+# ===========================================
+
+# USER trying to access admin transactions (should return 403)
+curl -v -X GET http://localhost:8080/api/admin/transactions \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# ===========================================
+# TODO: Implement remaining endpoints
+# ===========================================
+# ✅ /api/admin/accounts/{id}/deposit
+# ✅ /api/admin/accounts/{id}/withdraw
+# ✅ /api/admin/accounts/{id}/transfer
+# ✅ /api/admin/loans
+# ✅ /api/admin/loans/{id}/approve
+# ✅ /api/admin/loans/{id}/reject
+# ✅ /api/admin/chequebooks
+# ✅ /api/admin/chequebooks/{id}/approve
+# ✅ /api/admin/chequebooks/{id}/reject
+# ✅ /api/admin/cards
+# ✅ /api/admin/cards/{id}/approve
+# ✅ /api/admin/cards/{id}/reject
+# ✅ /api/user/applyloan
+# ✅ /api/user/viewloan
+# ✅ /api/user/viewchequebook
+# ✅ /api/user/applychequebook
+# ✅ /api/user/applycard
+# ✅ /api/user/viewcard
+
+# ===========================================
+# USER: APPLY FOR LOAN
+# ===========================================
+
+# Apply for HOME loan with valid data
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "HOME",
+    "principalAmount": 500000.00,
+    "termMonths": 240,
+    "reason": "Home renovation project"
+  }'
+
+# Apply for PERSONAL loan with valid data
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "PERSONAL",
+    "principalAmount": 50000.00,
+    "termMonths": 36,
+    "reason": "Personal expenses"
+  }'
+
+# Apply for AUTO loan with valid data
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "AUTO",
+    "principalAmount": 300000.00,
+    "termMonths": 60
+  }'
+
+# Apply for EDUCATION loan with valid data
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "EDUCATION",
+    "principalAmount": 100000.00,
+    "termMonths": 48,
+    "reason": "Masters degree"
+  }'
+
+# Apply loan with invalid loan type (should fail - 400)
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "INVALID",
+    "principalAmount": 50000.00,
+    "termMonths": 12
+  }'
+
+# Apply loan with negative amount (should fail - 400)
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "PERSONAL",
+    "principalAmount": -5000.00,
+    "termMonths": 12
+  }'
+
+# Apply loan with zero term months (should fail - 400)
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "HOME",
+    "principalAmount": 100000.00,
+    "termMonths": 0
+  }'
+
+# Apply loan without authentication (should fail - 401)
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -d '{
+    "loanType": "PERSONAL",
+    "principalAmount": 50000.00,
+    "termMonths": 12
+  }'
+
+# Apply loan with optional reason field (no reason provided)
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "AUTO",
+    "principalAmount": 200000.00,
+    "termMonths": 48
+  }'
+
+# ===========================================
+# USER: VIEW LOANS
+# ===========================================
+
+# View all loans for authenticated user
+curl -v -X GET http://localhost:8080/api/user/viewloan \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# View loans without authentication (should fail - 401)
+curl -v -X GET http://localhost:8080/api/user/viewloan
+
+# ===========================================
+# ADMIN: OPEN ACCOUNT FOR EXISTING USER
+# ===========================================
+
+# ADMIN: Open account for existing user (by userId)
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "userId": "user-uuid-here",
+    "accountType": "SAVINGS"
+  }'
+
+# ADMIN: Open account with holder details
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "userId": "user-uuid-here",
+    "accountType": "CHECKING",
+    "firstName": "John",
+    "lastName": "Doe",
+    "address": "123 Main St",
+    "phone": "+1234567890"
+  }'
+
+# ADMIN: Open Fixed Deposit account
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "userId": "user-uuid-here",
+    "accountType": "FIXED_DEPOSIT"
+  }'
+
+# ADMIN: Try to open account for non-existent user (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "userId": "00000000-0000-0000-0000-000000000000",
+    "accountType": "SAVINGS"
+  }'
+
+# ADMIN: Try to open account for inactive user (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "userId": "inactive-user-uuid",
+    "accountType": "SAVINGS"
+  }'
+
+# ADMIN: Try to open account with invalid account type (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "userId": "user-uuid-here",
+    "accountType": "INVALID_TYPE"
+  }'
+
+# ADMIN: Try to open account without userId (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "accountType": "SAVINGS"
+  }'
+
+# ADMIN: Try to open account without accountType (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "userId": "user-uuid-here"
+  }'
+
+# USER trying to access admin open account (should return 403)
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "userId": "user-uuid-here",
+    "accountType": "SAVINGS"
+  }'
+
+# Access admin open account without token (should return 401)
+curl -v -X POST http://localhost:8080/api/admin/accounts/open \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "user-uuid-here",
+    "accountType": "SAVINGS"
+  }'
+
+# ===========================================
+# ADMIN: UPDATE ACCOUNT
+# ===========================================
+
+# ADMIN: Update account type
+curl -v -X PUT http://localhost:8080/api/admin/accounts/{accountId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "accountType": "CHECKING"
+  }'
+
+# ADMIN: Update holder details
+curl -v -X PUT http://localhost:8080/api/admin/accounts/{accountId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Smith",
+    "address": "456 New Street, City, State 12345",
+    "phone": "+9876543210"
+  }'
+
+# ADMIN: Update both account type and holder details
+curl -v -X PUT http://localhost:8080/api/admin/accounts/{accountId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "accountType": "FIXED_DEPOSIT",
+    "firstName": "John",
+    "lastName": "Smith",
+    "dateOfBirth": "1990-05-15",
+    "citizenshipId": "US987654321"
+  }'
+
+# ADMIN: Try to update non-existent account (should return 400)
+curl -v -X PUT http://localhost:8080/api/admin/accounts/00000000-0000-0000-0000-000000000000 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "accountType": "CHECKING"
+  }'
+
+# ADMIN: Try to update with invalid account type (should return 400)
+curl -v -X PUT http://localhost:8080/api/admin/accounts/{accountId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "accountType": "INVALID_TYPE"
+  }'
+
+# USER trying to update account (should return 403)
+curl -v -X PUT http://localhost:8080/api/admin/accounts/{accountId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountType": "CHECKING"
+  }'
+
+# ===========================================
+# ADMIN: DELETE ACCOUNT
+# ===========================================
+
+# ADMIN: Delete closed account
+curl -v -X DELETE http://localhost:8080/api/admin/accounts/{accountId} \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to delete open account (should return 400 - only closed accounts can be deleted)
+curl -v -X DELETE http://localhost:8080/api/admin/accounts/{openAccountId} \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to delete non-existent account (should return 400)
+curl -v -X DELETE http://localhost:8080/api/admin/accounts/00000000-0000-0000-0000-000000000000 \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# USER trying to delete account (should return 403)
+curl -v -X DELETE http://localhost:8080/api/admin/accounts/{accountId} \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Access delete account without token (should return 401)
+curl -v -X DELETE http://localhost:8080/api/admin/accounts/{accountId}
+
+# ===========================================
+# ADMIN: LOAN MANAGEMENT - ENDPOINTS
+# ===========================================
+
+# ADMIN: View ALL loans (pending, approved, rejected)
+curl -v -X GET http://localhost:8080/api/admin/loans \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Approve a pending loan (disburses funds to user's account)
+curl -v -X POST http://localhost:8080/api/admin/loans/{loanId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Reject a pending loan (requires reason)
+curl -v -X POST http://localhost:8080/api/admin/loans/{loanId}/reject \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "reason": "Insufficient credit history"
+  }'
+
+# ADMIN: Reject loan with different reason
+curl -v -X POST http://localhost:8080/api/admin/loans/{loanId}/reject \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "reason": "Income does not meet minimum requirements"
+  }'
+
+# ===========================================
+# ADMIN: LOAN MANAGEMENT - SECURITY TESTS
+# ===========================================
+
+# USER trying to access admin loans endpoint (should return 403)
+curl -v -X GET http://localhost:8080/api/admin/loans \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER trying to approve a loan (should return 403)
+curl -v -X POST http://localhost:8080/api/admin/loans/{loanId}/approve \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER trying to reject a loan (should return 403)
+curl -v -X POST http://localhost:8080/api/admin/loans/{loanId}/reject \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{"reason": "test"}'
+
+# Access admin loans without token (should return 401)
+curl -v -X GET http://localhost:8080/api/admin/loans
+
+# ===========================================
+# ADMIN: LOAN MANAGEMENT - ERROR TESTS
+# ===========================================
+
+# ADMIN: Try to approve non-existent loan (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/loans/00000000-0000-0000-0000-000000000000/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to reject non-existent loan (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/loans/00000000-0000-0000-0000-000000000000/reject \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"reason": "test"}'
+
+# ADMIN: Try to approve already approved loan (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/loans/{alreadyApprovedLoanId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to reject already rejected loan (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/loans/{alreadyRejectedLoanId}/reject \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"reason": "test"}'
+
+# ADMIN: Try to approve loan without active account (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/loans/{loanIdWithoutAccount}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to reject loan without providing reason (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/loans/{loanId}/reject \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{}'
+
+# ===========================================
+# ADMIN: LOAN MANAGEMENT - COMPLETE FLOW TEST
+# ===========================================
+
+# Step 1: USER applies for a loan
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "PERSONAL",
+    "principalAmount": 50000.00,
+    "termMonths": 24,
+    "reason": "Home improvement"
+  }'
+
+# Step 2: ADMIN views all loans to find the new loan
+curl -v -X GET http://localhost:8080/api/admin/loans \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Step 3: ADMIN approves the loan (funds disbursed to user's account)
+curl -v -X POST http://localhost:8080/api/admin/loans/{loanId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Step 4: Verify loan status is now "Approved" in the response
+# Step 5: Verify user's account balance increased by loan amount
+
+# ===========================================
+# ADMIN: LOAN MANAGEMENT - REJECTION FLOW TEST
+# ===========================================
+
+# Step 1: USER applies for another loan
+curl -v -X POST http://localhost:8080/api/user/applyloan \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "loanType": "HOME",
+    "principalAmount": 1000000.00,
+    "termMonths": 240,
+    "reason": "Buy a house"
+  }'
+
+# Step 2: ADMIN views all loans
+curl -v -X GET http://localhost:8080/api/admin/loans \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Step 3: ADMIN rejects the loan
+curl -v -X POST http://localhost:8080/api/admin/loans/{loanId}/reject \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "reason": "Property value does not meet requirements"
+  }'
+
+# Step 4: Verify loan status is now "Rejected" with reason in the response
+
+# ===========================================
+# CHEQUEBOOK - USER ENDPOINTS
+# ===========================================
+
+# USER: View all chequebook requests for own account
+curl -v -X GET http://localhost:8080/api/user/viewchequebook \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: View chequebook requests without authentication (should return 401)
+curl -v -X GET http://localhost:8080/api/user/viewchequebook
+
+# USER: Apply for chequebook with valid account
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "numberOfLeaves": 50,
+    "deliveryAddress": "123 Main Street, City, State 12345"
+  }'
+
+# USER: Apply for chequebook with default number of leaves
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here"
+  }'
+
+# USER: Apply for chequebook with number of leaves less than 50
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "numberOfLeaves": 25
+  }'
+
+# USER: Apply for chequebook without authentication (should return 401)
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accountId": "account-uuid-here"
+  }'
+
+# USER: Apply for chequebook without accountId (should return 400)
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "numberOfLeaves": 50
+  }'
+
+# USER: Apply for chequebook with number of leaves exceeding 50 (should return 400)
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "numberOfLeaves": 100
+  }'
+
+# USER: Apply for chequebook with non-existent account (should return 400)
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "00000000-0000-0000-0000-000000000000"
+  }'
+
+# USER: Apply for chequebook with another user's account (should return 400 - Access denied)
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "other-user-account-uuid"
+  }'
+
+# USER: Apply for chequebook with closed/inactive account (should return 400)
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "inactive-account-uuid"
+  }'
+
+# USER: Apply for chequebook when one already pending (should return 400 - duplicate request)
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-with-pending-request"
+  }'
+
+# ===========================================
+# CHEQUEBOOK - ADMIN ENDPOINTS
+# ===========================================
+
+# ADMIN: View ALL chequebook requests
+curl -v -X GET http://localhost:8080/api/admin/chequebooks \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Approve a pending chequebook request
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{requestId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Reject a pending chequebook request
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{requestId}/reject \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d 'reason=Insufficient account history'
+
+# ADMIN: Reject with custom reason
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{requestId}/reject \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d 'reason=Account does not meet minimum balance requirement'
+
+# ===========================================
+# CHEQUEBOOK - SECURITY TESTS
+# ===========================================
+
+# USER trying to access admin chequebooks (should return 403)
+curl -v -X GET http://localhost:8080/api/admin/chequebooks \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER trying to approve a chequebook request (should return 403)
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{requestId}/approve \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER trying to reject a chequebook request (should return 403)
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{requestId}/reject \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d 'reason=test'
+
+# Access admin chequebooks without token (should return 401)
+curl -v -X GET http://localhost:8080/api/admin/chequebooks
+
+# ===========================================
+# CHEQUEBOOK - ERROR TESTS
+# ===========================================
+
+# ADMIN: Try to approve non-existent chequebook request (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/99999/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to reject non-existent chequebook request (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/99999/reject \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d 'reason=test'
+
+# ADMIN: Try to approve already approved chequebook request (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{approvedRequestId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to reject already rejected chequebook request (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{rejectedRequestId}/reject \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d 'reason=test'
+
+# ADMIN: Try to approve already rejected chequebook request (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{rejectedRequestId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to reject already approved chequebook request (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{approvedRequestId}/reject \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d 'reason=test'
+
+# ===========================================
+# CHEQUEBOOK - COMPLETE FLOW TEST
+# ===========================================
+
+# NOTE: ChequeBook requests are typically created through account application
+# The flow below shows how to view and manage existing requests
+
+# Step 1: USER views their chequebook requests
+curl -v -X GET http://localhost:8080/api/user/viewchequebook \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Step 2: ADMIN views all chequebook requests to find pending ones
+curl -v -X GET http://localhost:8080/api/admin/chequebooks \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Step 3a: ADMIN approves a pending chequebook request
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{pendingRequestId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# OR
+
+# Step 3b: ADMIN rejects a pending chequebook request
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{pendingRequestId}/reject \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d 'reason=Account age less than 6 months'
+
+# Step 4: Verify the status changed in the response
+
+# ===========================================
+# CHEQUEBOOK - COMPLETE FLOW TEST
+# ===========================================
+
+# Step 1: USER lists their accounts to get an accountId
+curl -v -X GET http://localhost:8080/api/user/accounts \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Step 2: USER applies for a chequebook
+curl -v -X POST http://localhost:8080/api/user/applychequebook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "numberOfLeaves": 50,
+    "deliveryAddress": "123 Main Street, City, State 12345"
+  }'
+
+# Step 3: USER views their chequebook requests to confirm
+curl -v -X GET http://localhost:8080/api/user/viewchequebook \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Step 4: ADMIN views all chequebook requests
+curl -v -X GET http://localhost:8080/api/admin/chequebooks \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Step 5a: ADMIN approves the chequebook request
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{requestId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# OR
+
+# Step 5b: ADMIN rejects the chequebook request
+curl -v -X POST http://localhost:8080/api/admin/chequebooks/{requestId}/reject \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d 'reason=Account does not meet minimum requirements'
+
+# Step 6: USER views chequebook requests again to confirm status change
+curl -v -X GET http://localhost:8080/api/user/viewchequebook \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# ===========================================
+# CARD - USER ENDPOINTS
+# ===========================================
+
+# USER: View all cards for own accounts
+curl -v -X GET http://localhost:8080/api/user/viewcard \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER: View cards without authentication (should return 401)
+curl -v -X GET http://localhost:8080/api/user/viewcard
+
+# USER: Apply for DEBIT card with valid account
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "cardType": "DEBIT"
+  }'
+
+# USER: Apply for CREDIT card with valid account
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "cardType": "CREDIT"
+  }'
+
+# USER: Apply for card without authentication (should return 401)
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "cardType": "DEBIT"
+  }'
+
+# USER: Apply for card without accountId (should return 400)
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "cardType": "DEBIT"
+  }'
+
+# USER: Apply for card without cardType (should return 400)
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here"
+  }'
+
+# USER: Apply for card with invalid cardType (should return 400)
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "cardType": "INVALID"
+  }'
+
+# USER: Apply for card with non-existent account (should return 400)
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "00000000-0000-0000-0000-000000000000",
+    "cardType": "DEBIT"
+  }'
+
+# USER: Apply for card with another user's account (should return 400 - Access denied)
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "other-user-account-uuid",
+    "cardType": "DEBIT"
+  }'
+
+# USER: Apply for card with closed/inactive account (should return 400)
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "inactive-account-uuid",
+    "cardType": "DEBIT"
+  }'
+
+# USER: Apply for card when 3 cards already exist on account (should return 400 - Max limit reached)
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-with-max-cards",
+    "cardType": "DEBIT"
+  }'
+
+# ===========================================
+# CARD - USER ENDPOINTS - COMPLETE FLOW TEST
+# ===========================================
+
+# Step 1: USER lists their accounts to get an accountId
+curl -v -X GET http://localhost:8080/api/user/accounts \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Step 2: USER applies for a DEBIT card
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "cardType": "DEBIT"
+  }'
+
+# Step 3: USER views their cards to confirm (CVV will be null - only returned at creation)
+curl -v -X GET http://localhost:8080/api/user/viewcard \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Step 4: Save the card details including CVV (only available in creation response)
+
+# ===========================================
+# CARD - VALIDATION NOTES
+# ===========================================
+
+# Card Number: 16-digit random unique number (generated automatically)
+# CVV: 3-digit random number (returned only at card creation, must be saved by user)
+# Expiration Date: Set to 3 years from creation date
+# Daily Limit: Default $500.00
+# Status: Starts as "Pending" (requires admin approval)
+# Max Cards per Account: 3
+
+# ===========================================
+# CARD - ADMIN ENDPOINTS
+# ===========================================
+
+# ADMIN: View ALL cards (pending, approved, rejected)
+curl -v -X GET http://localhost:8080/api/admin/cards \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Approve a pending card
+curl -v -X POST http://localhost:8080/api/admin/cards/{cardId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Reject a pending card (with reason)
+curl -v -X POST "http://localhost:8080/api/admin/cards/{cardId}/reject?reason=Insufficient%20account%20history" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Reject a pending card (with custom reason)
+curl -v -X POST "http://localhost:8080/api/admin/cards/{cardId}/reject?reason=Account%20does%20not%20meet%20requirements" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ===========================================
+# CARD - ADMIN ENDPOINTS - SECURITY TESTS
+# ===========================================
+
+# USER trying to access admin cards (should return 403)
+curl -v -X GET http://localhost:8080/api/admin/cards \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER trying to approve a card (should return 403)
+curl -v -X POST http://localhost:8080/api/admin/cards/{cardId}/approve \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# USER trying to reject a card (should return 403)
+curl -v -X POST http://localhost:8080/api/admin/cards/{cardId}/reject \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Access admin cards without token (should return 401)
+curl -v -X GET http://localhost:8080/api/admin/cards
+
+# ===========================================
+# CARD - ADMIN ENDPOINTS - ERROR TESTS
+# ===========================================
+
+# ADMIN: Try to approve non-existent card (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/cards/00000000-0000-0000-0000-000000000000/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to reject non-existent card (should return 400)
+curl -v -X POST "http://localhost:8080/api/admin/cards/00000000-0000-0000-0000-000000000000/reject?reason=test" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to approve already approved card (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/cards/{approvedCardId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to reject already rejected card (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/cards/{rejectedCardId}/reject \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to approve already rejected card (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/cards/{rejectedCardId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ADMIN: Try to reject already approved card (should return 400)
+curl -v -X POST http://localhost:8080/api/admin/cards/{approvedCardId}/reject \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# ===========================================
+# CARD - ADMIN ENDPOINTS - COMPLETE FLOW TEST
+# ===========================================
+
+# Step 1: USER applies for a DEBIT card
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "cardType": "DEBIT"
+  }'
+
+# Step 2: ADMIN views all cards to find pending ones
+curl -v -X GET http://localhost:8080/api/admin/cards \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Step 3a: ADMIN approves the card
+curl -v -X POST http://localhost:8080/api/admin/cards/{cardId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# OR
+
+# Step 3b: ADMIN rejects the card
+curl -v -X POST "http://localhost:8080/api/admin/cards/{cardId}/reject?reason=Account%20does%20not%20meet%20requirements" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Step 4: USER views their cards to confirm status change
+curl -v -X GET http://localhost:8080/api/user/viewcard \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# ===========================================
+# CARD - COMPLETE INTEGRATION FLOW TEST
+# ===========================================
+
+# Step 1: Register and login user
+# Register user (from tests above)
+
+# Step 2: Get user token (from login response)
+
+# Step 3: USER lists their accounts
+curl -v -X GET http://localhost:8080/api/user/accounts \
+  -H "Authorization: Bearer $USER_TOKEN"
+
+# Step 4: USER applies for a CREDIT card
+curl -v -X POST http://localhost:8080/api/user/applycard \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "accountId": "account-uuid-here",
+    "cardType": "CREDIT"
+  }'
+
+# Step 5: Save the response (contains cardNumber and CVV)
+# NOTE: This is the ONLY time CVV is returned!
+
+# Step 6: ADMIN login to get admin token
+
+# Step 7: ADMIN views all pending cards
+curl -v -X GET http://localhost:8080/api/admin/cards \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Step 8: ADMIN approves the card
+curl -v -X POST http://localhost:8080/api/admin/cards/{cardId}/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Step 9: USER verifies card is now active
+curl -v -X GET http://localhost:8080/api/user/viewcard \
+  -H "Authorization: Bearer $USER_TOKEN"

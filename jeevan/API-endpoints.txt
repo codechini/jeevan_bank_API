@@ -1,0 +1,49 @@
+1. Front end React:
+    1. Pages:
+        1. Home
+        2. login
+        3. Register
+        4. Services
+            1. Open Account
+            2. Deposit money
+            3. Withdraw money
+            4. Transfer money
+            5. Apply for loan
+            6. Credit/Debit card
+            7. Order Cheque book
+        5. Terms of Service
+2. Back end Springboot:
+    1. Routes:
+        1. Common
+            1. /api/auth/login
+            2. /api/auth/register
+        2. User
+            1. /api/user/openaccount
+            2. /api/user/deleteaccount
+            3. /api/user/updateaccount
+            4. /api/user/viewaccount
+            5. /api/user/withdraw
+            6. /api/user/deposit
+            7. /api/user/transfer
+            8. /api/user/transactions
+            9. /api/user/applyloan
+            10. /api/user/viewloan
+            11. /api/user/applycard
+            12. /api/user/viewcard
+            13. /api/user/viewchequebook
+        3. Admin
+            1. /api/admin/openaccount
+            2. /api/admin/deleteaccount
+            3. /api/admin/updateaccount
+            4. /api/admin/viewaccount
+            5. /api/admin/viewallaccounts
+            6. /api/admin/viewaccount/<account_number>
+            7. /api/admin/withdraw
+            8. /api/admin/deposit
+            9. /api/admin/transfer/<account_number>
+            10. /api/admin/transactions *(maybe)
+            11. /api/admin/applyloan
+            12. /api/admin/viewloan
+            13. /api/admin/applycard
+            14. /api/admin/viewcard
+            15. /api/admin/viewchequebook
