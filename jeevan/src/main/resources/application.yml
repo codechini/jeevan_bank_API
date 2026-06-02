@@ -9,15 +9,20 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: false # Good job keeping this false to prevent log rate limits!
     properties:
       hibernate:
-#        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        # Adding this suppresses unnecessary Hibernate diagnostic spam on startup
+        logging:
+          level:
+            org.hibernate.SQL: WARN
 
 jwt:
-  secret: ${JWT_SECRET:ThisIsAVeryLongSecretKeyForJeevanBankJWTAuthenticationThatIsAtLeast256Bits}
+  # Added a default fallback secret for local development so it doesn't crash locally
+  secret: ${JWT_SECRET:a_very_long_and_secure_random_string_for_local_development_32_bytes}
   expiration: 86400000
 
 server:
-  port: 8080
+  # Railway injects a dynamic port via the PORT variable. This handles it seamlessly.
+  port: ${PORT:8080}
