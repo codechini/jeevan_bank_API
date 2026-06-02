@@ -20,7 +20,7 @@ spring:
 
 jwt:
   # Added a default fallback secret for local development so it doesn't crash locally
-  secret: ${JWT_SECRET:a_very_long_and_secure_random_string_for_local_development_32_bytes}
+  secret: ${JWT_SECRET:ThisIsAVeryLongSecretKeyForJeevanBankJWTAuthenticationThatIsAtLeast256Bits}
   expiration: 86400000
 
 server:
