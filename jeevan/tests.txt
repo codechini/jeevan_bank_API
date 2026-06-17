@@ -512,6 +512,138 @@ curl -v -X GET http://localhost:8080/api/admin/transactions \
   -H "Authorization: Bearer $USER_TOKEN"
 
 # ===========================================
+# CHANGE PASSWORD - USER ENDPOINT (Requires authentication)
+# ===========================================
+
+# USER: Change password (requires current + new password)
+curl -v -X PUT http://localhost:8080/api/auth/change-password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "currentPassword": "TestPass123!",
+    "newPassword": "NewSecurePass456!"
+  }'
+
+# USER: Change password with wrong current password (should return 400)
+curl -v -X PUT http://localhost:8080/api/auth/change-password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "currentPassword": "WrongPassword!",
+    "newPassword": "NewSecurePass456!"
+  }'
+
+# USER: Change password without authentication (should return 401)
+curl -v -X PUT http://localhost:8080/api/auth/change-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currentPassword": "TestPass123!",
+    "newPassword": "NewSecurePass456!"
+  }'
+
+# USER: Change password with new password too short (should return 400)
+curl -v -X PUT http://localhost:8080/api/auth/change-password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "currentPassword": "TestPass123!",
+    "newPassword": "short"
+  }'
+
+# ===========================================
+# UPDATE PROFILE - USER ENDPOINT
+# ===========================================
+
+# USER: Update own profile (username, email, firstName, lastName)
+curl -v -X PUT http://localhost:8080/api/user/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "username": "newusername",
+    "email": "newemail@example.com",
+    "firstName": "NewFirst",
+    "lastName": "NewLast"
+  }'
+
+# USER: Update only email
+curl -v -X PUT http://localhost:8080/api/user/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "email": "updated@example.com"
+  }'
+
+# USER: Update only firstName
+curl -v -X PUT http://localhost:8080/api/user/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "firstName": "UpdatedName"
+  }'
+
+# USER: Try duplicate username (should return 400)
+curl -v -X PUT http://localhost:8080/api/user/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "username": "existinguser"
+  }'
+
+# USER: Try invalid email (should return 400)
+curl -v -X PUT http://localhost:8080/api/user/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "email": "not-an-email"
+  }'
+
+# USER: Update profile without authentication (should return 401)
+curl -v -X PUT http://localhost:8080/api/user/profile \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Hacker"
+  }'
+
+# ===========================================
+# ADMIN: UPDATE ANY USER PROFILE
+# ===========================================
+
+# ADMIN: Update any user's profile
+curl -v -X PUT http://localhost:8080/api/admin/users/{userId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "username": "adminupdated",
+    "email": "adminupdated@example.com",
+    "firstName": "AdminEdit",
+    "lastName": "User"
+  }'
+
+# ADMIN: Update only email for a user
+curl -v -X PUT http://localhost:8080/api/admin/users/{userId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "email": "changedbyadmin@example.com"
+  }'
+
+# ADMIN: Try to update non-existent user (should return 400)
+curl -v -X PUT http://localhost:8080/api/admin/users/00000000-0000-0000-0000-000000000000 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "firstName": "Ghost"
+  }'
+
+# USER trying to access admin update user (should return 403)
+curl -v -X PUT http://localhost:8080/api/admin/users/{someUserId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -d '{
+    "firstName": "Hacker"
+  }'
+
+# ===========================================
 # TODO: Implement remaining endpoints
 # ===========================================
 # ✅ /api/admin/accounts/{id}/deposit

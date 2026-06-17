@@ -22,6 +22,8 @@
 
 Jeevan Bank is a Spring Boot REST API that provides comprehensive banking functionality including:
 - User registration and authentication
+- Profile management (update username, email, name)
+- Password change
 - Account management (open, view, update, close, delete)
 - Financial transactions (deposit, withdraw, transfer)
 - Loan applications and management
@@ -733,7 +735,88 @@ View all chequebook requests for the authenticated user.
 
 ---
 
-## 3.7 Admin Account Endpoints
+## 3.7 User Profile Endpoint
+
+### PUT /api/user/profile
+Update the authenticated user's profile (username, email, firstName, lastName).
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "username": "newusername",
+  "email": "newemail@example.com",
+  "firstName": "NewFirst",
+  "lastName": "NewLast"
+}
+```
+
+**Validation:**
+- All fields are optional — send only what you want to change
+- Username: min 3 chars, must be unique
+- Email: valid format, must be unique
+- Updates to `firstName`/`lastName` apply to the linked AccountHolder
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Profile updated successfully",
+  "data": {
+    "userId": "uuid",
+    "username": "newusername",
+    "email": "newemail@example.com",
+    "role": "ROLE_USER",
+    "firstName": "NewFirst",
+    "lastName": "NewLast",
+    "createdAt": "2024-01-10T08:00:00"
+  }
+}
+```
+
+---
+
+## 3.8 Change Password Endpoint
+
+### PUT /api/auth/change-password
+Change the authenticated user's password.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "currentPassword": "CurrentPass123!",
+  "newPassword": "NewSecurePass456!"
+}
+```
+
+**Validation:**
+- `currentPassword`: Required, must match the user's existing password
+- `newPassword`: Required, min 8 characters
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Password changed successfully",
+  "data": null
+}
+```
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "success": false,
+  "message": "Current password is incorrect",
+  "data": null
+}
+```
+
+---
+
+## 3.9 Admin Account Endpoints
 
 ### POST /api/admin/accounts/open
 Open account for existing user.
@@ -827,7 +910,7 @@ Admin transfer from any account.
 
 ---
 
-## 3.8 Admin User Management Endpoints
+## 3.10 Admin User Management Endpoints
 
 ### GET /api/admin/users
 List all users.
@@ -861,6 +944,41 @@ Get specific user details.
 
 ---
 
+### PUT /api/admin/users/{userId}
+Update any user's profile (username, email, firstName, lastName).
+
+**Headers:** `Authorization: Bearer <admin-token>`
+
+**Request:**
+```json
+{
+  "username": "newusername",
+  "email": "newemail@example.com",
+  "firstName": "NewFirst",
+  "lastName": "NewLast"
+}
+```
+
+**Validation:** Same as user profile update — all fields optional, uniqueness enforced.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "User updated successfully",
+  "data": {
+    "userId": "uuid",
+    "username": "newusername",
+    "email": "newemail@example.com",
+    "role": "ROLE_USER",
+    "firstName": "NewFirst",
+    "lastName": "NewLast"
+  }
+}
+```
+
+---
+
 ### PUT /api/admin/users/{userId}/activate
 Activate a user.
 
@@ -891,7 +1009,7 @@ Change user role.
 
 ---
 
-## 3.9 Admin Transaction Endpoints
+## 3.11 Admin Transaction Endpoints
 
 ### GET /api/admin/transactions
 View all transactions (admin).
@@ -903,7 +1021,7 @@ View all transactions (admin).
 
 ---
 
-## 3.10 Admin Loan Endpoints
+## 3.12 Admin Loan Endpoints
 
 ### GET /api/admin/loans
 View all loan applications.
@@ -953,7 +1071,7 @@ Reject a loan application.
 
 ---
 
-## 3.11 Admin Card Endpoints
+## 3.13 Admin Card Endpoints
 
 ### GET /api/admin/cards
 View all card applications.
@@ -999,7 +1117,7 @@ Reject a card application.
 
 ---
 
-## 3.12 Admin Chequebook Endpoints
+## 3.14 Admin Chequebook Endpoints
 
 ### GET /api/admin/chequebooks
 View all chequebook requests.
@@ -1056,6 +1174,24 @@ interface JwtResponse {
   username: string;
   email: string;
   role: string;          // "ROLE_USER" or "ROLE_ADMIN"
+}
+```
+
+### UpdateProfileRequest
+```typescript
+interface UpdateProfileRequest {
+  username?: string;     // Optional, unique, min 3 chars
+  email?: string;        // Optional, valid email, unique
+  firstName?: string;     // Optional, max 100 chars
+  lastName?: string;      // Optional, max 100 chars
+}
+```
+
+### ChangePasswordRequest
+```typescript
+interface ChangePasswordRequest {
+  currentPassword: string;  // Required, must match existing password
+  newPassword: string;      // Required, min 8 chars
 }
 ```
 
@@ -2012,7 +2148,71 @@ curl -X POST http://localhost:8080/api/auth/login \
 
 ---
 
-## 8.2 Account Tests
+## 8.2 Change Password Tests
+
+### Change password (success)
+```bash
+curl -X PUT http://localhost:8080/api/auth/change-password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "currentPassword": "TestPass123!",
+    "newPassword": "NewSecurePass456!"
+  }'
+```
+
+### Change password with wrong current password
+```bash
+curl -X PUT http://localhost:8080/api/auth/change-password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "currentPassword": "WrongPassword!",
+    "newPassword": "NewSecurePass456!"
+  }'
+```
+
+---
+
+## 8.3 Profile Update Tests
+
+### Update own profile
+```bash
+curl -X PUT http://localhost:8080/api/user/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "username": "updateduser",
+    "email": "updated@example.com",
+    "firstName": "Updated",
+    "lastName": "User"
+  }'
+```
+
+### Update just the email
+```bash
+curl -X PUT http://localhost:8080/api/user/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "email": "newemail@example.com"
+  }'
+```
+
+### Admin update any user
+```bash
+curl -X PUT http://localhost:8080/api/admin/users/{userId} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "username": "adminupdated",
+    "email": "adminupdated@example.com"
+  }'
+```
+
+---
+
+## 8.4 Account Tests
 
 ### Open account
 ```bash
@@ -2040,7 +2240,7 @@ curl -X GET http://localhost:8080/api/user/accounts/{accountId} \
 
 ---
 
-## 8.3 Transaction Tests
+## 8.5 Transaction Tests
 
 ### Deposit
 ```bash
@@ -2090,7 +2290,7 @@ curl -X GET "http://localhost:8080/api/user/accounts/{accountId}/transactions/pa
 
 ---
 
-## 8.4 Loan Tests
+## 8.6 Loan Tests
 
 ### Apply for loan
 ```bash
@@ -2113,7 +2313,7 @@ curl -X GET http://localhost:8080/api/user/viewloan \
 
 ---
 
-## 8.5 Card Tests
+## 8.7 Card Tests
 
 ### Apply for card
 ```bash
@@ -2134,7 +2334,7 @@ curl -X GET http://localhost:8080/api/user/viewcard \
 
 ---
 
-## 8.6 Chequebook Tests
+## 8.8 Chequebook Tests
 
 ### Apply for chequebook
 ```bash
@@ -2156,7 +2356,7 @@ curl -X GET http://localhost:8080/api/user/viewchequebook \
 
 ---
 
-## 8.7 Admin Tests
+## 8.9 Admin Tests
 
 ### View all accounts
 ```bash
@@ -2235,7 +2435,7 @@ curl -X PUT http://localhost:8080/api/admin/users/{userId}/role \
 
 ---
 
-## 8.8 Security Tests
+## 8.10 Security Tests
 
 ### Access without token (should return 401)
 ```bash
@@ -2294,8 +2494,11 @@ curl -X POST http://localhost:8080/api/user/openaccount \
 | GET | /api/user/viewloan | USER | View loans |
 | POST | /api/user/applycard | USER | Apply card |
 | GET | /api/user/viewcard | USER | View cards |
+| PUT | /api/auth/change-password | USER/ADMIN | Change password |
+| PUT | /api/user/profile | USER | Update own profile |
 | POST | /api/user/applychequebook | USER | Apply chequebook |
 | GET | /api/user/viewchequebook | USER | View chequebooks |
+| PUT | /api/admin/users/{id} | ADMIN | Update any user |
 | GET | /api/admin/accounts | ADMIN | List all accounts |
 | GET | /api/admin/accounts/{id} | ADMIN | Get account |
 | POST | /api/admin/accounts/open | ADMIN | Open account |
@@ -2329,6 +2532,8 @@ curl -X POST http://localhost:8080/api/user/openaccount \
 | password | Required, min 8 characters |
 | email | Required, valid email format |
 | amount | Required, must be > 0 |
+| currentPassword | Required, must match existing password |
+| newPassword | Required, min 8 characters |
 | accountType | SAVINGS, CHECKING, FIXED_DEPOSIT |
 | loanType | HOME, PERSONAL, AUTO, EDUCATION |
 | cardType | CREDIT, DEBIT |
@@ -2360,6 +2565,8 @@ curl -X POST http://localhost:8080/api/user/openaccount \
 7. View Card → Status is now Active
 8. Transfer Money → Verify transaction
 9. View Transactions → Confirm transfer
+10. Update Profile → Change username, email, name
+11. Change Password → Update login password
 ```
 
 ## B.2 Complete Admin Flow
@@ -2368,7 +2575,7 @@ curl -X POST http://localhost:8080/api/user/openaccount \
 1. Login as Admin
 2. View all pending requests (loans, cards, chequebooks)
 3. Review and approve/reject requests
-4. Manage user accounts (activate/deactivate)
+4. Manage user accounts (view, activate, deactivate, update profile, change role)
 5. View system-wide transactions
 ```
 

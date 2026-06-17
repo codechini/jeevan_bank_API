@@ -1,5 +1,6 @@
 package com.jeevan.bank.service;
 
+import com.jeevan.bank.dto.UpdateProfileRequest;
 import com.jeevan.bank.dto.UserDetailsResponse;
 import com.jeevan.bank.dto.UserListResponse;
 import com.jeevan.bank.entity.AccountHolder;
@@ -92,6 +93,47 @@ public class UserService {
         return mapToUserDetailsResponse(user);
     }
     
+    @Transactional
+    public UserDetailsResponse adminUpdateProfile(UUID targetUserId, UpdateProfileRequest request) {
+        return updateProfile(targetUserId, request);
+    }
+
+    @Transactional
+    public UserDetailsResponse updateProfile(UUID userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(request.getUsername())) {
+                throw new IllegalArgumentException("Username already exists");
+            }
+            user.setUsername(request.getUsername());
+        }
+
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new IllegalArgumentException("Email already exists");
+            }
+            user.setEmail(request.getEmail());
+        }
+
+        userRepository.save(user);
+
+        if (request.getFirstName() != null || request.getLastName() != null) {
+            accountHolderRepository.findByUser_UserId(userId).ifPresent(holder -> {
+                if (request.getFirstName() != null) {
+                    holder.setFirstName(request.getFirstName());
+                }
+                if (request.getLastName() != null) {
+                    holder.setLastName(request.getLastName());
+                }
+                accountHolderRepository.save(holder);
+            });
+        }
+
+        return mapToUserDetailsResponse(user);
+    }
+
     private UserListResponse mapToUserListResponse(User user) {
         Boolean isActive = null;
         try {

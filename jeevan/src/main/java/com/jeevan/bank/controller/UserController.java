@@ -7,6 +7,7 @@ import com.jeevan.bank.service.AuthService;
 import com.jeevan.bank.service.CardService;
 import com.jeevan.bank.service.ChequeBookService;
 import com.jeevan.bank.service.LoanService;
+import com.jeevan.bank.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class UserController {
     
     private final AuthService authService;
+    private final UserService userService;
     private final UserRepository userRepository;
     private final LoanService loanService;
     private final ChequeBookService chequeBookService;
@@ -107,5 +109,17 @@ public class UserController {
         
         CardResponse response = cardService.applyCard(user.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success("Card application submitted successfully", response));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<UserDetailsResponse>> updateProfile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody UpdateProfileRequest request) {
+
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        UserDetailsResponse response = userService.updateProfile(user.getUserId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", response));
     }
 }

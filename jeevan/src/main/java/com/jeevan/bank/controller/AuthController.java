@@ -30,4 +30,13 @@ public class AuthController {
         JwtResponse response = authService.register(request);
         return ResponseEntity.ok(ApiResponse.success("Registration successful", response));
     }
+    
+    @PutMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        
+        authService.changePassword(userDetails.getUsername(), request);
+        return ResponseEntity.ok(ApiResponse.<Void>success("Password changed successfully", null));
+    }
 }

@@ -2,6 +2,7 @@ package com.jeevan.bank.controller;
 
 import com.jeevan.bank.dto.ApiResponse;
 import com.jeevan.bank.dto.RoleChangeRequest;
+import com.jeevan.bank.dto.UpdateProfileRequest;
 import com.jeevan.bank.dto.UserDetailsResponse;
 import com.jeevan.bank.dto.UserListResponse;
 import com.jeevan.bank.entity.User;
@@ -70,5 +71,14 @@ public class AdminUserController {
         
         UserDetailsResponse user = userService.changeRole(userId, request.getRole(), admin.getUserId());
         return ResponseEntity.ok(ApiResponse.success("User role updated successfully", user));
+    }
+
+    @PutMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserDetailsResponse>> updateUser(
+            @PathVariable UUID userId,
+            @Valid @RequestBody UpdateProfileRequest request) {
+
+        UserDetailsResponse user = userService.adminUpdateProfile(userId, request);
+        return ResponseEntity.ok(ApiResponse.success("User updated successfully", user));
     }
 }

@@ -333,6 +333,13 @@ public class AuthController {
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest signUpRequest) {
         return ResponseEntity.ok(authService.register(signUpRequest));
     }
+
+    // Change password (requires authentication)
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(Principal principal, @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(principal.getName(), request);
+        return ResponseEntity.ok("Password changed successfully");
+    }
 }
 ```
 
@@ -350,6 +357,14 @@ import java.security.Principal;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
+
+    // Update own profile (username, email, firstName, lastName)
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(Principal principal, @RequestBody UpdateProfileRequest request) {
+        User user = userRepository.findByUsername(principal.getName()).orElseThrow();
+        UserDetailsResponse response = userService.updateProfile(user.getUserId(), request);
+        return ResponseEntity.ok(response);
+    }
 
     [cite_start]// [cite: 3]
     @PostMapping("/openaccount")
@@ -423,6 +438,13 @@ import org.springframework.http.ResponseEntity;
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
+
+    // Update any user's profile (username, email, firstName, lastName)
+    @PutMapping("/users/{userId}")
+    public ResponseEntity<?> updateUser(@PathVariable UUID userId, @RequestBody UpdateProfileRequest request) {
+        UserDetailsResponse response = userService.adminUpdateProfile(userId, request);
+        return ResponseEntity.ok(response);
+    }
 
     [cite_start]// [cite: 5]
     @GetMapping("/viewallaccounts")
